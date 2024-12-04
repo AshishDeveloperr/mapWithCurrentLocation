@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapbox Custom Coordinates with Current Location</title>
+  <title>Mapbox Live Geolocation Tracking</title>
   <!-- Include Mapbox GL JS stylesheet -->
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.css" rel="stylesheet" />
   <!-- Include Mapbox GL JS script -->
@@ -31,26 +31,31 @@
       zoom: 16 // Zoom level
     });
 
-    // Get the current geolocation using the Geolocation API
+    // Initialize marker for the current location
+    let userMarker = new mapboxgl.Marker()
+      .setPopup(new mapboxgl.Popup().setHTML('<h3>Your Current Location</h3>'))
+      .addTo(map);
+
+    // Function to update the user's location on the map
+    function updateLocation(position) {
+      const userLatitude = position.coords.latitude;
+      const userLongitude = position.coords.longitude;
+
+      // Update the map's center to the new position
+      map.setCenter([userLongitude, userLatitude]);
+
+      // Update the marker position
+      userMarker.setLngLat([userLongitude, userLatitude]);
+    }
+
+    // Watch the user's position and update the map as the user moves
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        // Get current latitude and longitude
-        const userLatitude = position.coords.latitude;
-        const userLongitude = position.coords.longitude;
-
-        // Center the map on the user's current location
-        map.setCenter([userLongitude, userLatitude]);
-
-        // Add a marker for the user's current location
-        new mapboxgl.Marker()
-          .setLngLat([userLongitude, userLatitude])
-          .setPopup(new mapboxgl.Popup().setHTML('<h3>Your Current Location</h3>'))
-          .addTo(map);
-
-        // Optionally, zoom in closer to the current location
-        map.setZoom(15);
-      }, function(error) {
+      const watchId = navigator.geolocation.watchPosition(updateLocation, function(error) {
         console.error("Error getting geolocation:", error);
+      }, {
+        enableHighAccuracy: true, // Request high accuracy
+        maximumAge: 0,            // Do not use cached position
+        timeout: 5000             // Timeout after 5 seconds
       });
     } else {
       alert("Geolocation is not supported by this browser.");
